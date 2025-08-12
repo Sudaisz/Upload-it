@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cool File Uploader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .drag-enter {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 to-gray-800 text-white min-h-screen flex items-center justify-center p-4 transition-colors duration-500">
+
+    <div class="w-full max-w-2xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <div class="flex items-center justify-center gap-3 mb-2">
+                <svg class="w-10 h-10 text-cyan-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 8.25H7.5a2.25 2.25 0 00-2.25 2.25v9a2.25 2.25 0 002.25 2.25h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25H15m0-3l-3-3m0 0l-3 3m3-3v11.25" />
+                </svg>
+                <h1 class="text-4xl font-bold tracking-tight text-white">FileDrop</h1>
+            </div>
+            <p class="text-lg text-slate-400">Secure & simple file sharing</p>
+
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="mt-4 px-4 py-2 rounded-lg border border-slate-500 text-sm">
+                Toggle Light/Dark
+            </button>
+        </header>
+
+        <div class="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl shadow-cyan-500/10">
+            <div id="dropzone" class="p-8">
+                <input type="file" id="fileInput" multiple class="hidden">
+                <div id="dropzone-area" class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center cursor-pointer transition-all duration-300 hover:bg-slate-700/50 hover:border-cyan-500">
+                    <div class="flex flex-col items-center justify-center text-slate-400">
+                        <svg class="w-16 h-16 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                        <p class="text-lg font-semibold text-white">Drag & drop files here</p>
+                        <p>or</p>
+                        <button id="browseBtn" class="mt-4 bg-cyan-500 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:bg-cyan-600 transition-colors">
+                            Browse Files
+                        </button>
+                         <p class="text-xs mt-4 text-slate-500">Max file size: 1GB</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="file-list-section" class="px-8 pb-4 space-y-4"></div>
+
+            <!-- Footer -->
+            <div id="footer-summary" class="bg-slate-900/60 p-4 rounded-b-2xl border-t border-slate-700 mt-4 hidden">
+                <div class="flex justify-between items-center text-sm">
+                    <p class="font-medium text-slate-300">Total Uploaded:</p>
+                    <p id="total-files" class="font-bold text-cyan-400 text-base">0 Files</p>
+                </div>
+                <div class="flex justify-between items-center text-sm mt-2">
+                    <p class="font-medium text-slate-300">Total Size:</p>
+                    <p id="total-size" class="font-bold text-cyan-400 text-base">0 MB</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const dropzoneArea = document.getElementById('dropzone-area');
+        const fileInput = document.getElementById('fileInput');
+        const browseBtn = document.getElementById('browseBtn');
+        const fileListSection = document.getElementById('file-list-section');
+        const footerSummary = document.getElementById('footer-summary');
+        const totalFilesEl = document.getElementById('total-files');
+        const totalSizeEl = document.getElementById('total-size');
+        const themeToggle = document.getElementById('themeToggle');
+
+        let totalUploadedCount = 0;
+        let totalUploadedSize = 0;
+
+        // Theme Toggle with Local Storage
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light');
+            if (document.body.classList.contains('light')) {
+                document.body.classList.remove('bg-gradient-to-br', 'from-slate-900', 'to-gray-800', 'text-white');
+                document.body.classList.add('bg-white', 'text-black');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.body.classList.add('bg-gradient-to-br', 'from-slate-900', 'to-gray-800', 'text-white');
+                document.body.classList.remove('bg-white', 'text-black');
+                localStorage.setItem('theme', 'dark');
+            }
+        });
+
+        // Apply saved theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.remove('bg-gradient-to-br', 'from-slate-900', 'to-gray-800', 'text-white');
+            document.body.classList.add('bg-white', 'text-black');
+        }
+
+        browseBtn.addEventListener('click', () => fileInput.click());
+        dropzoneArea.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzoneArea.classList.add('drag-enter'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, () => dropzoneArea.classList.remove('drag-enter'), false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            handleFiles(e.dataTransfer.files);
+        }, false);
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleFiles(files) {
+            if (!files.length) return;
+            footerSummary.classList.remove('hidden');
+            [...files].forEach(file => {
+                if (file.size > 1024 * 1024 * 1024) {
+                    alert(`File "${file.name}" is too large.`);
+                    return;
+                }
+                createFileItem(file);
+            });
+        }
+
+        function createFileItem(file) {
+            const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const fileItemHTML = `
+                <div id="${fileId}" class="bg-slate-700/50 p-4 rounded-lg flex items-center gap-4 animate-fade-in">
+                    <div class="flex-grow overflow-hidden">
+                        <div class="flex justify-between items-center text-sm">
+                            <p class="font-medium truncate pr-2">${file.name}</p>
+                            <p class="text-slate-400 flex-shrink-0">${formatFileSize(file.size)}</p>
+                        </div>
+                        <div class="mt-2 progress-wrapper">
+                            <div class="w-full bg-slate-600 rounded-full h-2">
+                                <div class="progress-bar bg-cyan-500 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-1">
+                                <p class="status-text text-xs text-slate-400">Uploading...</p>
+                                <p class="progress-percent text-xs font-semibold">0%</p>
+                            </div>
+                        </div>
+                        <div class="completed-wrapper hidden mt-2">
+                            <p class="text-sm text-green-400 font-medium">Upload Complete 🎉</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            fileListSection.insertAdjacentHTML('beforeend', fileItemHTML);
+            simulateUpload(fileId, file.size);
+        }
+
+        function simulateUpload(fileId, fileSize) {
+            const fileItem = document.getElementById(fileId);
+            const progressWrapper = fileItem.querySelector('.progress-wrapper');
+            const completedWrapper = fileItem.querySelector('.completed-wrapper');
+            const progressBar = fileItem.querySelector('.progress-bar');
+            const progressPercent = fileItem.querySelector('.progress-percent');
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 10) + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressPercent.textContent = '100%';
+
+                    setTimeout(() => {
+                        progressWrapper.classList.add('hidden');
+                        completedWrapper.classList.remove('hidden');
+
+                        // 🎉 Confetti when upload is done
+                        confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+
+                        // Update total stats
+                        totalUploadedCount++;
+                        totalUploadedSize += fileSize;
+                        totalFilesEl.textContent = `${totalUploadedCount} File${totalUploadedCount > 1 ? 's' : ''}`;
+                        totalSizeEl.textContent = formatFileSize(totalUploadedSize);
+
+                    }, 300);
+
+                } else {
+                    progressBar.style.width = `${progress}%`;
+                    progressPercent.textContent = `${progress}%`;
+                }
+            }, 200);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+
+    <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+    </style>
+</body>
+</html>
